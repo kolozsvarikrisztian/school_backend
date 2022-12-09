@@ -25,19 +25,10 @@ app.get('/students', (req, res) => {
         const students = await collection.find().toArray();
         res.send(students);
         client.close();
-    });
+      });
 });
 
-function getId(raw) {
-    try {
-        return new ObjectId(raw);
-    } catch (error) {
-        return "";
-    }
-}
-
 const bodyParser = require('body-parser');
-const { request } = require("express");
 
 app.post('/students', bodyParser.json(), (req, res) => {
     const newStudent = {
@@ -48,53 +39,41 @@ app.post('/students', bodyParser.json(), (req, res) => {
     }
     const client = getClient();
     client.connect(async err => {
-        const collection = client.db("school_app").collection("students")
+        const collection = client.db("school_app").collection("students");
         const result = await collection.insertOne(newStudent);
         if (!result.insertedId) {
             res.send({error: "insert error"});
             return;
-        }
-        res.send(newStudent);
+          };
+        res.send(newStudent);  
         client.close();
     });
 });
 
-
+function getId(raw) {
+    try {
+      return new ObjectId(raw);
+    } catch (error) {
+      return "";
+    }
+  }
 
 app.get('/students/:id', (req, res) => {
     const id = getId(req.params.id);
     if (!id) {
-        res.send({error: "invalid id"});
+        res.send({error: "Invalid id"});
         return;
     }
     const client = getClient();
     client.connect(async err => {
         const collection = client.db("school_app").collection("students");
+        // perform actions on the collection object
         const student = await collection.findOne({_id: id});
         if (!student) {
-            res.send({error: "student not found"});
+            res.send({error: "not found"});
             return;
-        }
+        }  
         res.send(student);
-        client.close();
-    });
-});
-
-app.delete('/students/:id', (req, res) => {
-    const id = getId(req.params.id);
-    if (!id) {
-        res.send({error: "invalid id"});
-        return;
-    }
-    const client = getClient();
-    client.connect(async err => {
-        const collection = client.db("school_app").collection("students");
-        const result = await collection.deleteOne({_id: id});
-        if (!result.deletedCount) {
-            res.send({error: "student not found"});
-            return;
-        }
-        res.send({id: req.params.id});
         client.close();
     });
 });
@@ -103,24 +82,43 @@ app.put('/students/:id', bodyParser.json(), (req, res) => {
     const updatedStudent = {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
-        birthYear: req.body.birthYear
-        // grades: []
+        birthYear: req.body.birthYear        
     }
-
     const id = getId(req.params.id);
     if (!id) {
-        res.send({error: "invalid id"});
+        res.send({error: "Invalid id"});
         return;
     }
     const client = getClient();
     client.connect(async err => {
         const collection = client.db("school_app").collection("students");
+        // perform actions on the collection object
         const result = await collection.findOneAndUpdate({_id: id}, {$set: updatedStudent}, {returnDocument: "after"});
         if (!result.ok) {
-            res.send({error: "student not found"});
+            res.send({error: "not found"}).status(404);
             return;
-        }
+        }  
         res.send(result.value);
+        client.close();
+    });
+});
+
+app.delete('/students/:id', (req, res) => {
+    const id = getId(req.params.id);
+    if (!id) {
+        res.send({error: "Invalid id"});
+        return;
+    }
+    const client = getClient();
+    client.connect(async err => {
+        const collection = client.db("school_app").collection("students");
+        // perform actions on the collection object
+        const result = await collection.deleteOne({_id: id});
+        if (!result.deletedCount) {
+            res.send({error: "not found"});
+            return;
+        }  
+        res.send({id: req.params.id});
         client.close();
     });
 });
@@ -129,21 +127,23 @@ app.post('/grades', bodyParser.json(), (req, res) => {
     const newGrade = req.body.grade;
     const id = getId(req.body.studentId);
     if (!id) {
-        res.send({error: "invalid id"});
+        res.send({error: "Invalid id"});
         return;
     }
     const client = getClient();
     client.connect(async err => {
         const collection = client.db("school_app").collection("students");
+        // perform actions on the collection object
         const result = await collection.findOneAndUpdate({_id: id}, {$push: {grades: newGrade}}, {returnDocument: "after"});
         if (!result.ok) {
-            res.send({error: "student not found"});
+            res.send({error: "not found"});
             return;
-        }
+        }  
         res.send(result.value);
         client.close();
     });
+
 });
 
-app.listen(9000);
 
+app.listen(9000);
